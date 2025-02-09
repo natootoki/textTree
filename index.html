@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ツリー構造エディタ</title>
+    <style>
+        body {
+            font-family: monospace;
+            display: flex;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            display: flex;
+            width: 100%;
+            overflow: hidden;
+        }
+        .input-container, .output-container {
+            padding: 10px;
+            flex: 1;
+            width: 50%;
+            display: flex;
+            flex-direction: column;
+        }
+        .output-container {
+            background: #f4f4f4;
+            white-space: pre;
+        }
+        .input-container textarea {
+            width: 100%;
+            flex-grow: 1;
+            resize: none;
+            white-space: pre;
+            overflow: auto;
+            min-height: 50px;
+        }
+        .output-container pre {
+            white-space: pre;
+            overflow: auto;
+            flex-grow: 1;
+            min-height: 50px;
+        }
+    </style>
+</head>
+<body>
+    <h2>ツリー構造エディタ</h2>
+    <div class="container">
+        <div class="input-container">
+            <h3>入力</h3>
+            <textarea id="input" placeholder="ここにツリー構造を入力"></textarea>
+        </div>
+        <div class="output-container">
+            <h3>出力</h3>
+            <pre id="output"></pre>
+        </div>
+    </div>
+    
+    <script>
+        function parseTree(text) {
+            const lines = text.split('\n').filter(line => line.trim() !== "");
+            const tree = [];
+            const stack = [];
+            const depthIndicators = [];
+
+            lines.forEach(line => {
+                const spaces = line.match(/^\s*/)[0].length;
+                const node = { text: line.trim(), spaces };
+
+                while (stack.length && stack[stack.length - 1].spaces >= spaces) {
+                    stack.pop();
+                    depthIndicators.pop();
+                }
+
+                if (stack.length) {
+                    const parent = stack[stack.length - 1];
+                    if (!parent.children) parent.children = [];
+                    parent.children.push(node);
+                } else {
+                    tree.push(node);
+                }
+                stack.push(node);
+                depthIndicators.push(spaces);
+            });
+
+            function formatTree(nodes, prefix = "", depth = 0, parentContinues = []) {
+                return nodes.map((node, index, arr) => {
+                    const isLast = index === arr.length - 1;
+                    let indent = parentContinues.slice(1).map(p => p ? "│" : "　").join("");
+                    let result = (depth === 0 ? "" : indent + (isLast ? "└" : "├")) + node.text;
+                    let newParentContinues = [...parentContinues, !isLast];
+                    if (node.children) {
+                        result += "\n" + formatTree(node.children, prefix, depth + 1, newParentContinues).join("\n");
+                    }
+                    return result;
+                });
+            }
+
+            return formatTree(tree, "", 0, []).join("\n");
+        }
+
+        document.getElementById("input").addEventListener("input", function () {
+            document.getElementById("output").textContent = parseTree(this.value);
+        });
+    </script>
+</body>
+</html>
