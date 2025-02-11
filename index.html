@@ -59,6 +59,15 @@
     
     <script>
 
+        // **マッピングリスト（[チェックする文字, 追加する文字]）**
+        const mappingList = [
+            ["┃", "┃"], 
+            ["┗", "┃"], 
+            ["┣", "┃"],
+            ["　", "　"],
+            [" ", "　"],
+        ];
+
         // arrリストのstartIndex番目の要素から、threshold以下の値が登場するまで探索し、
         // 最後にthreshold+1が登場したインデックス番号を返す
         function getLastIndexBeforeThreshold(arr, startIndex, threshold) {
@@ -95,6 +104,52 @@
             return str.substring(0, charIndex) + replacement + str.substring(charIndex + 1);
         }
 
+        function compareAdjacentElements(arr) {
+            return arr.map((value, index) => {
+                if (index === arr.length - 1) return false; // 最後の要素は比較対象がないので false
+                return value === arr[index + 1]; // 次の要素と比較
+            });
+        }
+
+        function mapCharactersUntilUnknown(inputStr, mappingList) {
+            let result = ""; // 追加結果の文字列
+
+            for (let char of inputStr) {
+                let mappedValue = mappingList.find(item => item[0] === char); // マッピング検索
+                
+                if (mappedValue) {
+                    result += mappedValue[1]; // 指定の文字を追加
+                } else {
+                    break; // マッピングリストにない文字が出たら処理を打ち切る
+                }
+            }
+
+            return result;
+        }
+
+        function normalizeLeadingSpaces(arr) {
+            return arr.map(str => {
+                // 先頭の半角・全角スペースを取得
+                const match = str.match(/^[\s　]+/);
+                if (!match) return str; // 先頭にスペースがない場合はそのまま返す
+
+                const spaceCount = match[0].length; // スペースの数を取得
+                const newSpaces = "　".repeat(spaceCount); // 全角スペースで埋める
+
+                return newSpaces + str.trimStart(); // 置き換えて戻す
+            });
+        }
+
+        function insertAtFirstNonSpace(arr, insertText) {
+            return arr.map(str => {
+                const match = str.match(/^([\s　]*)/); // 先頭のスペースを取得
+                const spacePart = match ? match[0] : ""; // スペース部分（ない場合は空文字）
+                const nonSpacePart = str.slice(spacePart.length); // 非スペース文字以降
+
+                return spacePart + insertText + nonSpacePart; // 先頭のスペース部分の後に挿入
+            });
+        }
+
         function makeTree() {
             // 入力された文字
             let text = document.getElementById("input").value;
@@ -106,7 +161,11 @@
                 return match ? match[0].length : 0; // スペースの長さを返す
             });
 
-            let replase_lines = lines;
+            let space_equal = compareAdjacentElements(spaceCounts);
+
+            let replase_lines = normalizeLeadingSpaces(lines);
+            replase_lines = insertAtFirstNonSpace(replase_lines, "◆")
+            let tree_lines = [];
 
             //"┃"
             for (let i = 0; i < lines.length; i++) {
@@ -125,7 +184,22 @@
                 replase_lines[i] = replaceCharIfMatchInString(replase_lines[i], spaceCounts[i] - 1, "┃", "┣");
             }
 
-            document.getElementById("output").textContent = replase_lines.join("\n");
+            //空行
+            for (let i = 0; i < lines.length; i++) {
+                tree_lines.push(replase_lines[i]);
+                if (!space_equal[i]) {
+                    tree_lines.push("");
+                }
+            }
+
+            //空行文字補填
+            for (let i = 0; i < tree_lines.length - 1; i++) {
+                if (tree_lines[i] === "") {
+                    tree_lines[i] = mapCharactersUntilUnknown(tree_lines[i + 1], mappingList);
+                }
+            }
+
+            document.getElementById("output").textContent = tree_lines.join("\n");
         }
 
         document.getElementById("input").addEventListener("input", function () {
@@ -135,3 +209,4 @@
     </script>
 </body>
 </html>
+
