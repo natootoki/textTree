@@ -210,8 +210,8 @@
             outputElement.textContent = "";
             tree_lines_propaty = [];
 
-            // 特定の文字列が出たら、そこから <span> にする
-                const targetWord = head; // 例: "重要" という文字が出たらその部分を <span> にする
+            // 特定の文字列が出たら、そこから <span> または <a> にする
+            const targetWord = head; // 例: "重要" という文字が出たらその部分を変換
 
             // 各行をHTMLに追加
             tree_lines.forEach((line, index) => {
@@ -221,24 +221,35 @@
                 let baseText = line.split("::")[0]; // ベースのテキスト（"::" の前）
                 let spanStyle = "";
                 let descriptionText = "";
+                let linkUrl = "";
 
-                // "::" で分割して description と color を取得
+                // "::" で分割して属性を取得（汎用的な処理）
                 line.split("::").forEach(part => {
-                    if (part.startsWith("description=")) {
-                        tree_lines_propaty[index]["description"] = part.replace(/^description=/, "");
-                        descriptionText = tree_lines_propaty[index]["description"];
-                    } else if (part.startsWith("color=")) {
-                        tree_lines_propaty[index]["color"] = part.replace(/^color=/, "");
-                        spanStyle = `color: ${tree_lines_propaty[index]["color"]};`;
+                    const [key, value] = part.split("="); // "key=value" の形式で分割
+
+                    if (value !== undefined) { // "key=value" の形式であることを確認
+                        tree_lines_propaty[index][key] = value; // オブジェクトに追加
                     }
                 });
 
-                // 特定の文字列が含まれている場合、その部分から <span> を適用
+                // HTMLの組み立て
                 if (baseText.includes(targetWord)) {
+                    // **特定の単語以降を <span> または <a> に変換**
                     const parts = baseText.split(targetWord);
-                    div.innerHTML = `${parts[0]}<span style="${spanStyle}" title="${descriptionText}">${targetWord}${parts[1]}</span>`;
+                    if (tree_lines_propaty[index]["link"]) {
+                        // **リンクがある場合**
+                        div.innerHTML = `${parts[0]}<a href="${tree_lines_propaty[index]["link"]}" target="_blank" style="${`color: ${tree_lines_propaty[index]["color"]};`}" title="${tree_lines_propaty[index]["description"]}">${targetWord}${parts[1]}</a>`;
+                    } else {
+                        // **リンクがない場合**
+                        div.innerHTML = `${parts[0]}<span style="${`color: ${tree_lines_propaty[index]["color"]};`}" title="${tree_lines_propaty[index]["description"]}">${targetWord}${parts[1]}</span>`;
+                    }
                 } else {
-                    div.innerHTML = `<span style="${spanStyle}" title="${descriptionText}">${baseText}</span>`;
+                    // **リンクがある場合は行全体を <a> にする**
+                    if (tree_lines_propaty[index]["link"]) {
+                        div.innerHTML = `<a href="${tree_lines_propaty[index]["link"]}" target="_blank" style="${`color: ${tree_lines_propaty[index]["color"]};`}" title="${tree_lines_propaty[index]["description"]}">${baseText}</a>`;
+                    } else {
+                        div.innerHTML = `<span style="${`color: ${tree_lines_propaty[index]["color"]};`}" title="${tree_lines_propaty[index]["description"]}">${baseText}</span>`;
+                    }
                 }
 
                 div.classList.add("line");
