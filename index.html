@@ -45,6 +45,7 @@
 </head>
 <body>
     <h2>ツリー構造エディタ</h2>
+    <button onclick="makeTree()">Click me</button>
     <div class="container">
         <div class="input-container">
             <h3>入力</h3>
@@ -57,50 +58,79 @@
     </div>
     
     <script>
-        function parseTree(text) {
-            const lines = text.split('\n').filter(line => line.trim() !== "");
-            const tree = [];
-            const stack = [];
-            const depthIndicators = [];
 
-            lines.forEach(line => {
-                const spaces = line.match(/^\s*/)[0].length;
-                const node = { text: line.trim(), spaces };
+        // arrリストのstartIndex番目の要素から、threshold以下の値が登場するまで探索し、
+        // 最後にthreshold+1が登場したインデックス番号を返す
+        function getLastIndexBeforeThreshold(arr, startIndex, threshold) {
+            let lastIndex = startIndex; // 初期値（見つからない場合）
 
-                while (stack.length && stack[stack.length - 1].spaces >= spaces) {
-                    stack.pop();
-                    depthIndicators.pop();
+            for (let i = startIndex + 1; i < arr.length; i++) {
+                if (arr[i] <= threshold) {
+                    break; // `threshold` 以下の値が登場したらループ終了
                 }
-
-                if (stack.length) {
-                    const parent = stack[stack.length - 1];
-                    if (!parent.children) parent.children = [];
-                    parent.children.push(node);
-                } else {
-                    tree.push(node);
+                if (arr[i] === threshold + 1) {
+                    lastIndex = i; // `threshold + 1` の値が登場したらインデックス更新
                 }
-                stack.push(node);
-                depthIndicators.push(spaces);
-            });
-
-            function formatTree(nodes, prefix = "", depth = 0, parentContinues = []) {
-                return nodes.map((node, index, arr) => {
-                    const isLast = index === arr.length - 1;
-                    let indent = parentContinues.slice(1).map(p => p ? "│" : "　").join("");
-                    let result = (depth === 0 ? "" : indent + (isLast ? "└" : "├")) + node.text;
-                    let newParentContinues = [...parentContinues, !isLast];
-                    if (node.children) {
-                        result += "\n" + formatTree(node.children, prefix, depth + 1, newParentContinues).join("\n");
-                    }
-                    return result;
-                });
             }
 
-            return formatTree(tree, "", 0, []).join("\n");
+            return lastIndex;
+        }
+
+        // arrリストのstartElemIndex番目からendElemIndex番目の要素を探索し、
+        // 
+        function replaceCharInRange(arr, startElemIndex, endElemIndex, charIndex, replacement) {
+            return arr.map((str, i) => {
+                if (i < startElemIndex + 1 || i > endElemIndex) return str; // 指定範囲外なら変更しない
+                if (charIndex < 0 || charIndex >= str.length) return str; // 文字の範囲外なら変更しない
+                
+                return str.substring(0, charIndex) + replacement + str.substring(charIndex + 1);
+            });
+        }
+
+        function replaceCharIfMatchInString(str, charIndex, targetChar, replacement) {
+            if (charIndex === -1) return str; // charIndex が -1 の場合は変更しない
+            if (charIndex < 0 || charIndex >= str.length) return str; // インデックス範囲外なら変更しない
+            if (str[charIndex] !== targetChar) return str; // 指定の文字でなければ変更しない
+
+            return str.substring(0, charIndex) + replacement + str.substring(charIndex + 1);
+        }
+
+        function makeTree() {
+            // 入力された文字
+            let text = document.getElementById("input").value;
+            // 改行区切り、空行除外
+            let lines = text.split('\n').filter(line => line.trim() !== "");
+            // 各行の先頭のスペース数（全角+半角）を計算
+            const spaceCounts = lines.map(line => {
+                const match = line.match(/^[\s　]+/); // 先頭の全角・半角スペースを取得
+                return match ? match[0].length : 0; // スペースの長さを返す
+            });
+
+            let replase_lines = lines;
+
+            //"┃"
+            for (let i = 0; i < lines.length; i++) {
+                replase_lines = replaceCharInRange(replase_lines, i, getLastIndexBeforeThreshold(spaceCounts, i, spaceCounts[i]), spaceCounts[i], "┃");
+            }
+
+            //"┗"
+            for (let i = 0; i < lines.length; i++) {
+                if (getLastIndexBeforeThreshold(spaceCounts, i, spaceCounts[i]) - i > 0) {
+                    replase_lines = replaceCharInRange(replase_lines, getLastIndexBeforeThreshold(spaceCounts, i, spaceCounts[i]) - 1, getLastIndexBeforeThreshold(spaceCounts, i, spaceCounts[i]), spaceCounts[i], "┗");   
+                }
+            }
+
+            //"┣"
+            for (let i = 0; i < lines.length; i++) {
+                replase_lines[i] = replaceCharIfMatchInString(replase_lines[i], spaceCounts[i] - 1, "┃", "┣");
+            }
+
+            document.getElementById("output").textContent = replase_lines.join("\n");
         }
 
         document.getElementById("input").addEventListener("input", function () {
-            document.getElementById("output").textContent = parseTree(this.value);
+            makeTree();
+            
         });
     </script>
 </body>
