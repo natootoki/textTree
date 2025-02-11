@@ -59,6 +59,8 @@
     
     <script>
 
+        const outputElement = document.getElementById("output");
+
         // **マッピングリスト（[チェックする文字, 追加する文字]）**
         const mappingList = [
             ["┃", "┃"], 
@@ -67,6 +69,10 @@
             ["　", "　"],
             [" ", "　"],
         ];
+
+        const head = "◆";
+
+        let tree_lines_propaty = []
 
         // arrリストのstartIndex番目の要素から、threshold以下の値が登場するまで探索し、
         // 最後にthreshold+1が登場したインデックス番号を返す
@@ -164,7 +170,7 @@
             let space_equal = compareAdjacentElements(spaceCounts);
 
             let replase_lines = normalizeLeadingSpaces(lines);
-            replase_lines = insertAtFirstNonSpace(replase_lines, "◆")
+            replase_lines = insertAtFirstNonSpace(replase_lines, head)
             let tree_lines = [];
 
             //"┃"
@@ -199,7 +205,45 @@
                 }
             }
 
-            document.getElementById("output").textContent = tree_lines.join("\n");
+            // document.getElementById("output").textContent = tree_lines.join("\n");
+
+            outputElement.textContent = "";
+            tree_lines_propaty = [];
+
+            // 特定の文字列が出たら、そこから <span> にする
+                const targetWord = head; // 例: "重要" という文字が出たらその部分を <span> にする
+
+            // 各行をHTMLに追加
+            tree_lines.forEach((line, index) => {
+                tree_lines_propaty.push({}); // プロパティ用のオブジェクトを追加
+                const div = document.createElement("div");
+
+                let baseText = line.split("::")[0]; // ベースのテキスト（"::" の前）
+                let spanStyle = "";
+                let descriptionText = "";
+
+                // "::" で分割して description と color を取得
+                line.split("::").forEach(part => {
+                    if (part.startsWith("description=")) {
+                        tree_lines_propaty[index]["description"] = part.replace(/^description=/, "");
+                        descriptionText = tree_lines_propaty[index]["description"];
+                    } else if (part.startsWith("color=")) {
+                        tree_lines_propaty[index]["color"] = part.replace(/^color=/, "");
+                        spanStyle = `color: ${tree_lines_propaty[index]["color"]};`;
+                    }
+                });
+
+                // 特定の文字列が含まれている場合、その部分から <span> を適用
+                if (baseText.includes(targetWord)) {
+                    const parts = baseText.split(targetWord);
+                    div.innerHTML = `${parts[0]}<span style="${spanStyle}" title="${descriptionText}">${targetWord}${parts[1]}</span>`;
+                } else {
+                    div.innerHTML = `<span style="${spanStyle}" title="${descriptionText}">${baseText}</span>`;
+                }
+
+                div.classList.add("line");
+                outputElement.appendChild(div);
+            });
         }
 
         document.getElementById("input").addEventListener("input", function () {
