@@ -206,6 +206,7 @@
             }
 
             // document.getElementById("output").textContent = tree_lines.join("\n");
+            console.log(tree_lines);
 
             outputElement.textContent = "";
             tree_lines_propaty = [];
@@ -244,10 +245,9 @@
                         div.innerHTML = `${parts[0]}<span style="${`color: ${tree_lines_propaty[index]["color"]};`}" title="${tree_lines_propaty[index]["description"]}">${targetWord}${parts[1]}</span>`;
                     }
                 } else {
-                    // **リンクがある場合は行全体を <a> にする**
-                    if (tree_lines_propaty[index]["link"]) {
-                        div.innerHTML = `<a href="${tree_lines_propaty[index]["link"]}" target="_blank" style="${`color: ${tree_lines_propaty[index]["color"]};`}" title="${tree_lines_propaty[index]["description"]}">${baseText}</a>`;
-                    } else {
+                    if (baseText === "") {
+                        div.innerHTML = `<br>`;
+                    }else {
                         div.innerHTML = `<span style="${`color: ${tree_lines_propaty[index]["color"]};`}" title="${tree_lines_propaty[index]["description"]}">${baseText}</span>`;
                     }
                 }
